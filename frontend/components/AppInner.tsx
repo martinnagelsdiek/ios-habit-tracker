@@ -4,7 +4,9 @@ import { TodayView } from "./TodayView";
 import { ProgressView } from "./ProgressView";
 import { HabitsView } from "./HabitsView";
 import { Header } from "./Header";
-import { Home, TrendingUp, Target } from "lucide-react";
+import { LevelingOverview } from "./leveling/LevelingOverview";
+import { Home, TrendingUp, Target, Zap } from "lucide-react";
+import { FEATURE_LEVELING } from "../config";
 
 export function AppInner() {
   const [activeTab, setActiveTab] = useState("today");
@@ -14,7 +16,7 @@ export function AppInner() {
       <Header />
       <main className="container mx-auto px-4 py-6 max-w-4xl">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className={`grid w-full ${FEATURE_LEVELING ? 'grid-cols-4' : 'grid-cols-3'} mb-6`}>
             <TabsTrigger value="today" className="flex items-center gap-2">
               <Home className="w-4 h-4" />
               Today
@@ -27,6 +29,12 @@ export function AppInner() {
               <TrendingUp className="w-4 h-4" />
               Progress
             </TabsTrigger>
+            {FEATURE_LEVELING && (
+              <TabsTrigger value="leveling" className="flex items-center gap-2">
+                <Zap className="w-4 h-4" />
+                Level & Skills
+              </TabsTrigger>
+            )}
           </TabsList>
           
           <TabsContent value="today">
@@ -40,6 +48,12 @@ export function AppInner() {
           <TabsContent value="progress">
             <ProgressView />
           </TabsContent>
+          
+          {FEATURE_LEVELING && (
+            <TabsContent value="leveling">
+              <LevelingOverview />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>

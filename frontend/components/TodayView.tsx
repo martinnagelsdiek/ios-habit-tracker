@@ -1,12 +1,16 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useBackend } from "../hooks/useBackend";
 import { HabitCard } from "./HabitCard";
+import { CompletionDialog } from "./leveling/CompletionDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Target } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { FEATURE_LEVELING } from "../config";
 import type { TodayHabit } from "~backend/habits/today";
 
 export function TodayView() {
+  const [completionHabit, setCompletionHabit] = useState<TodayHabit | null>(null);
   const backend = useBackend();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -52,7 +56,12 @@ export function TodayView() {
     if (habit.isCompleted) {
       uncompleteMutation.mutate(habit.id);
     } else {
-      completeMutation.mutate(habit.id);
+      // Use completion dialog for leveling system, or direct completion for fallback
+      if (FEATURE_LEVELING) {
+        setCompletionHabit(habit);
+      } else {
+        completeMutation.mutate(habit.id);
+      }
     }
   };
 
@@ -102,6 +111,15 @@ export function TodayView() {
           </div>
         )}
       </div>
+
+      {/* Completion Dialog for Leveling System */}
+      {FEATURE_LEVELING && (
+        <CompletionDialog
+          habit={completionHabit}
+          open={!!completionHabit}
+          onClose={() => setCompletionHabit(null)}
+        />
+      )}
     </div>
   );
 }

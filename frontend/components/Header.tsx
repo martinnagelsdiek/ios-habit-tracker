@@ -1,11 +1,22 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { UserButton } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Settings, Zap } from "lucide-react";
 import { NotificationSettings } from "./NotificationSettings";
+import { FEATURE_LEVELING } from "../config";
+import backend from "~backend/client";
 
 export function Header() {
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  
+  const { data: levelingData } = useQuery({
+    queryKey: ["leveling-summary"],
+    queryFn: () => backend.leveling.getSummary(),
+    enabled: FEATURE_LEVELING,
+    refetchInterval: 60000, // Refresh every minute
+  });
   
   return (
     <>
@@ -18,6 +29,12 @@ export function Header() {
             <h1 className="text-xl font-semibold text-foreground">Habit Tracker</h1>
           </div>
           <div className="flex items-center gap-2">
+            {FEATURE_LEVELING && levelingData && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                <Zap className="w-3 h-3 text-yellow-500" />
+                L{levelingData.overall.level}
+              </Badge>
+            )}
             <Button
               variant="ghost"
               size="sm"

@@ -34,6 +34,7 @@ const BROWSER = typeof globalThis === "object" && ("window" in globalThis);
  */
 export class Client {
     public readonly habits: habits.ServiceClient
+    public readonly leveling: leveling.ServiceClient
     private readonly options: ClientOptions
     private readonly target: string
 
@@ -49,6 +50,7 @@ export class Client {
         this.options = options ?? {}
         const base = new BaseClient(this.target, this.options)
         this.habits = new habits.ServiceClient(base)
+        this.leveling = new leveling.ServiceClient(base)
     }
 
     /**
@@ -336,6 +338,45 @@ export namespace habits {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/habits/notifications/settings`, {method: "PUT", body: JSON.stringify(params)})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_habits_notifications_updateNotificationSettings>
+        }
+    }
+}
+
+/**
+ * Import the endpoint handlers to derive the types for the client.
+ */
+import { completeHabit as api_leveling_complete_completeHabit } from "~backend/leveling/complete";
+import { checkHealth as api_leveling_health_checkHealth } from "~backend/leveling/health";
+import { getSummary as api_leveling_summary_getSummary } from "~backend/leveling/summary";
+
+export namespace leveling {
+
+    export class ServiceClient {
+        private baseClient: BaseClient
+
+        constructor(baseClient: BaseClient) {
+            this.baseClient = baseClient
+            this.checkHealth = this.checkHealth.bind(this)
+            this.completeHabit = this.completeHabit.bind(this)
+            this.getSummary = this.getSummary.bind(this)
+        }
+
+        public async checkHealth(): Promise<ResponseType<typeof api_leveling_health_checkHealth>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/leveling/health`, {method: "GET", body: undefined})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_leveling_health_checkHealth>
+        }
+
+        public async completeHabit(params: RequestType<typeof api_leveling_complete_completeHabit>): Promise<ResponseType<typeof api_leveling_complete_completeHabit>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/leveling/complete`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_leveling_complete_completeHabit>
+        }
+
+        public async getSummary(): Promise<ResponseType<typeof api_leveling_summary_getSummary>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/leveling/summary`, {method: "GET", body: undefined})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_leveling_summary_getSummary>
         }
     }
 }
