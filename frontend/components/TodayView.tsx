@@ -58,8 +58,10 @@ export function TodayView() {
     } else {
       // Use completion dialog for leveling system, or direct completion for fallback
       if (FEATURE_LEVELING) {
+        console.log("Opening leveling completion dialog for habit:", habit.name);
         setCompletionHabit(habit);
       } else {
+        console.log("Using direct completion for habit:", habit.name);
         completeMutation.mutate(habit.id);
       }
     }

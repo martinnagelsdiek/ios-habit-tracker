@@ -30,9 +30,12 @@ export function CompletionDialog({ habit, open, onClose }: CompletionDialogProps
   const { toast } = useToast();
 
   const levelingMutation = useMutation({
-    mutationFn: (data: { habitId: number; amount?: number }) => 
-      backend.leveling.completeHabit(data),
+    mutationFn: (data: { habitId: number; amount?: number }) => {
+      console.log("Calling leveling API with data:", data);
+      return backend.leveling.completeHabit(data);
+    },
     onSuccess: (data) => {
+      console.log("Leveling completion successful:", data);
       queryClient.invalidateQueries({ queryKey: ["today-habits"] });
       queryClient.invalidateQueries({ queryKey: ["progress"] });
       queryClient.invalidateQueries({ queryKey: ["leveling-summary"] });
@@ -60,12 +63,9 @@ export function CompletionDialog({ habit, open, onClose }: CompletionDialogProps
       handleClose();
     },
     onError: (error) => {
-      console.error("Failed to complete habit:", error);
-      toast({
-        title: "Error",
-        description: "Failed to mark habit as complete",
-        variant: "destructive",
-      });
+      console.error("Leveling completion failed, trying fallback:", error);
+      // If leveling fails, try the regular completion as fallback
+      fallbackMutation.mutate(habit?.id || 0);
     },
   });
 
@@ -74,6 +74,7 @@ export function CompletionDialog({ habit, open, onClose }: CompletionDialogProps
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["today-habits"] });
       queryClient.invalidateQueries({ queryKey: ["progress"] });
+      queryClient.invalidateQueries({ queryKey: ["leveling-summary"] });
       toast({
         title: "Habit Completed! ✅",
         description: "Great job on completing your habit!",
@@ -81,7 +82,7 @@ export function CompletionDialog({ habit, open, onClose }: CompletionDialogProps
       handleClose();
     },
     onError: (error) => {
-      console.error("Failed to complete habit:", error);
+      console.error("Fallback completion also failed:", error);
       toast({
         title: "Error",
         description: "Failed to mark habit as complete",
@@ -93,15 +94,13 @@ export function CompletionDialog({ habit, open, onClose }: CompletionDialogProps
   const handleComplete = () => {
     if (!habit) return;
 
-    // Try leveling system first, fallback to regular completion
-    try {
-      levelingMutation.mutate({
-        habitId: habit.id,
-        amount: amount ? parseInt(amount) : undefined,
-      });
-    } catch (error) {
-      fallbackMutation.mutate(habit.id);
-    }
+    console.log("Attempting leveling completion for habit:", habit.name, "ID:", habit.id);
+    
+    // Try leveling system first
+    levelingMutation.mutate({
+      habitId: habit.id,
+      amount: amount ? parseInt(amount) : undefined,
+    });
   };
 
   const handleClose = () => {
