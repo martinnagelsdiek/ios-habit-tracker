@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Settings, Zap } from "lucide-react";
 import { NotificationSettings } from "./NotificationSettings";
+import { useBackend } from "../hooks/useBackend";
 import { FEATURE_LEVELING } from "../config";
-import backend from "~backend/client";
 
 export function Header() {
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const backend = useBackend();
   
   const { data: levelingData } = useQuery({
     queryKey: ["leveling-summary"],

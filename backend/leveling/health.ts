@@ -7,7 +7,7 @@ interface HealthResponse {
 }
 
 export const checkHealth = api<{}, HealthResponse>(
-  { expose: true, method: "GET", path: "/leveling/health" },
+  { expose: true, method: "GET", path: "/leveling/health", auth: false },
   async () => {
     try {
       // Check if leveling tables exist

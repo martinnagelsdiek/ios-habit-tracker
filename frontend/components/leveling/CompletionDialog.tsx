@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
 import { Zap, Star, TrendingUp, Trophy, Loader2 } from "lucide-react";
-import backend from "~backend/client";
+import { useBackend } from "../../hooks/useBackend";
 import type { TodayHabit } from "~backend/habits/today";
 
 interface CompletionDialogProps {
@@ -25,6 +25,7 @@ interface CompletionDialogProps {
 
 export function CompletionDialog({ habit, open, onClose }: CompletionDialogProps) {
   const [amount, setAmount] = useState("");
+  const backend = useBackend();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 

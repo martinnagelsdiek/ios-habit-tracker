@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import backend from "~backend/client";
+import { useBackend } from "../../hooks/useBackend";
 import { OverallLevelCard } from "./OverallLevelCard";
 import { CategoryCard } from "./CategoryCard";
 import { RadarChart } from "./RadarChart";
@@ -7,6 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, AlertCircle } from "lucide-react";
 
 export function LevelingOverview() {
+  const backend = useBackend();
+  
   // First check if leveling system is available
   const { data: healthData, isLoading: healthLoading } = useQuery({
     queryKey: ["leveling-health"],
@@ -105,6 +107,10 @@ export function LevelingOverview() {
 
   if (error) {
     console.error("Leveling query error:", error);
+    
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const isAuthError = errorMessage.includes('authentication') || errorMessage.includes('credentials');
+    
     return (
       <div className="space-y-6">
         <Card>
@@ -112,14 +118,27 @@ export function LevelingOverview() {
             <div className="text-center space-y-2">
               <div className="flex items-center gap-2 text-destructive justify-center">
                 <AlertCircle className="w-4 h-4" />
-                Failed to load leveling data
+                {isAuthError ? 'Authentication Required' : 'Failed to load leveling data'}
               </div>
               <p className="text-sm text-muted-foreground">
-                Error: {error instanceof Error ? error.message : 'Unknown error'}
+                {isAuthError 
+                  ? 'Please sign in to view your leveling progress'
+                  : `Error: ${errorMessage}`
+                }
               </p>
-              <p className="text-xs text-muted-foreground">
-                Check console for details
-              </p>
+              {isAuthError && (
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="mt-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                >
+                  Refresh Page
+                </button>
+              )}
+              {!isAuthError && (
+                <p className="text-xs text-muted-foreground">
+                  Check console for details
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
