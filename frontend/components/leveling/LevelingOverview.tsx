@@ -7,11 +7,86 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, AlertCircle } from "lucide-react";
 
 export function LevelingOverview() {
+  // First check if leveling system is available
+  const { data: healthData, isLoading: healthLoading } = useQuery({
+    queryKey: ["leveling-health"],
+    queryFn: async () => {
+      try {
+        return await backend.leveling.checkHealth();
+      } catch (err) {
+        console.error("Health check failed:", err);
+        return { tablesExist: false, error: "Service unavailable" };
+      }
+    },
+    retry: 1,
+    staleTime: 60000, // Cache for 1 minute
+  });
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["leveling-summary"],
-    queryFn: () => backend.leveling.getSummary(),
+    queryFn: async () => {
+      try {
+        // Check if the leveling service exists on the backend
+        if (!backend.leveling || !backend.leveling.getSummary) {
+          throw new Error("Leveling service not available on backend");
+        }
+        return await backend.leveling.getSummary();
+      } catch (err) {
+        console.error("Leveling API error:", err);
+        throw err;
+      }
+    },
     refetchInterval: 30000, // Refresh every 30 seconds
+    retry: 1, // Only retry once to avoid spam
+    enabled: healthData?.tablesExist === true, // Only run if tables exist
   });
+
+  if (healthLoading) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Checking leveling system...
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (healthData && !healthData.tablesExist) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 justify-center">
+                <AlertCircle className="w-5 h-5" />
+                <h3 className="font-semibold">Leveling System Initializing</h3>
+              </div>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                The leveling system is being set up in the background. 
+                Database migrations are still in progress. Please check back in a few moments.
+              </p>
+              {healthData.error && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Technical details: {healthData.error}
+                </p>
+              )}
+              <button 
+                onClick={() => window.location.reload()} 
+                className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                Refresh Page
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -29,13 +104,22 @@ export function LevelingOverview() {
   }
 
   if (error) {
+    console.error("Leveling query error:", error);
     return (
       <div className="space-y-6">
         <Card>
           <CardContent className="flex items-center justify-center py-12">
-            <div className="flex items-center gap-2 text-destructive">
-              <AlertCircle className="w-4 h-4" />
-              Failed to load leveling data
+            <div className="text-center space-y-2">
+              <div className="flex items-center gap-2 text-destructive justify-center">
+                <AlertCircle className="w-4 h-4" />
+                Failed to load leveling data
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Error: {error instanceof Error ? error.message : 'Unknown error'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Check console for details
+              </p>
             </div>
           </CardContent>
         </Card>
