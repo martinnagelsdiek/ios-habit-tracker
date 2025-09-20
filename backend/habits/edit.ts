@@ -44,7 +44,9 @@ export const editHabit = api<EditHabitRequest, Habit>(
     const frequencyDay = req.frequencyDay !== undefined ? req.frequencyDay : existingHabit.frequency_day;
     const recursOnWeekday = req.recursOnWeekday !== undefined ? req.recursOnWeekday : existingHabit.recurs_on_weekday;
     const reminderEnabled = req.reminderEnabled !== undefined ? req.reminderEnabled : existingHabit.reminder_enabled;
-    const reminderTime = req.reminderTime !== undefined ? req.reminderTime : (req.reminderEnabled === false ? null : existingHabit.reminder_time);
+    const reminderTime = req.reminderTime !== undefined ? 
+      (req.reminderTime ? req.reminderTime + ':00' : null) : 
+      (req.reminderEnabled === false ? null : existingHabit.reminder_time);
     const reminderDaysBefore = req.reminderDaysBefore !== undefined ? req.reminderDaysBefore : (req.reminderEnabled === false ? 0 : existingHabit.reminder_days_before);
 
     // If categoryId is being updated, verify the new category exists

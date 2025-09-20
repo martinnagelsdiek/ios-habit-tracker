@@ -68,7 +68,7 @@ export const createHabit = api<CreateHabitRequest, Habit>(
       reminder_days_before: number;
     }>`
       INSERT INTO habits (user_id, category_id, name, description, frequency_type, due_date, frequency_day, recurs_on_weekday, reminder_enabled, reminder_time, reminder_days_before)
-      VALUES (${auth.userID}, ${req.categoryId}, ${req.name}, ${req.description || null}, ${req.frequencyType}, ${req.dueDate}, ${req.frequencyDay || null}, ${req.recursOnWeekday || false}, ${req.reminderEnabled || false}, ${req.reminderTime || null}, ${req.reminderDaysBefore || 0})
+      VALUES (${auth.userID}, ${req.categoryId}, ${req.name}, ${req.description || null}, ${req.frequencyType}, ${req.dueDate}, ${req.frequencyDay || null}, ${req.recursOnWeekday || false}, ${req.reminderEnabled || false}, ${req.reminderTime ? req.reminderTime + ':00' : null}, ${req.reminderDaysBefore || 0})
       RETURNING *
     `;
 
