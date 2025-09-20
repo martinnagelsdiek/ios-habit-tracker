@@ -40,7 +40,7 @@ export const editHabit = api<EditHabitRequest, Habit>(
     const description = req.description !== undefined ? req.description : existingHabit.description;
     const categoryId = req.categoryId !== undefined ? req.categoryId : existingHabit.category_id;
     const frequencyType = req.frequencyType !== undefined ? req.frequencyType : existingHabit.frequency_type;
-    const dueDate = req.dueDate !== undefined ? req.dueDate : existingHabit.due_date;
+    const dueDate = req.dueDate !== undefined ? req.dueDate : existingHabit.due_date.toISOString().split('T')[0];
     const frequencyDay = req.frequencyDay !== undefined ? req.frequencyDay : existingHabit.frequency_day;
     const recursOnWeekday = req.recursOnWeekday !== undefined ? req.recursOnWeekday : existingHabit.recurs_on_weekday;
     const reminderEnabled = req.reminderEnabled !== undefined ? req.reminderEnabled : existingHabit.reminder_enabled;
@@ -56,6 +56,11 @@ export const editHabit = api<EditHabitRequest, Habit>(
         throw APIError.invalidArgument("category not found");
       }
     }
+
+    console.log("Values to update:", {
+      name, description, categoryId, frequencyType, dueDate, 
+      frequencyDay, recursOnWeekday, reminderEnabled, reminderTime, reminderDaysBefore
+    });
 
     // Update the habit
     await db.exec`
