@@ -25,6 +25,7 @@ export function TodayView() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["today-habits"] });
       queryClient.invalidateQueries({ queryKey: ["progress"] });
+      queryClient.invalidateQueries({ queryKey: ["leveling-summary"] });
     },
     onError: (error) => {
       console.error("Failed to complete habit:", error);
@@ -41,6 +42,7 @@ export function TodayView() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["today-habits"] });
       queryClient.invalidateQueries({ queryKey: ["progress"] });
+      queryClient.invalidateQueries({ queryKey: ["leveling-summary"] });
     },
     onError: (error) => {
       console.error("Failed to uncomplete habit:", error);

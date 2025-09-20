@@ -68,15 +68,47 @@ export const getSummary = api<{}, LevelingSummaryResponse>(
 
       const categories: CategorySummary[] = [];
       for await (const cat of basicCategories) {
+        // Try to get actual category progress
+        let categoryProgress;
+        try {
+          categoryProgress = await db.queryRow<{
+            level: number;
+            xp: number;
+            rank: string;
+          }>`
+            SELECT level, xp, rank
+            FROM category_progress
+            WHERE user_id = ${userId} AND category_id = ${cat.id}
+          `;
+        } catch (err) {
+          categoryProgress = null;
+        }
+
+        // Get last 7 days completions count
+        let completionsCount = 0;
+        try {
+          const result = await db.queryRow<{ count: number }>`
+            SELECT COUNT(*) as count
+            FROM habit_completions hc
+            JOIN habits h ON hc.habit_id = h.id
+            WHERE h.user_id = ${userId} 
+              AND h.category_id = ${cat.id}
+              AND hc.completion_date >= DATE('now', '-7 days')
+          `;
+          completionsCount = result?.count || 0;
+        } catch (err) {
+          // Ignore error, keep default 0
+        }
+
         categories.push({
           categoryId: cat.id,
           categoryName: cat.name,
           categoryColor: cat.color,
           categoryIcon: cat.icon,
-          level: 1,
-          xp: 0,
-          rank: 'Novice',
-          last7DayCompletions: 0
+          level: categoryProgress?.level || 1,
+          xp: categoryProgress?.xp || 0,
+          rank: categoryProgress?.rank || 'Novice',
+          last7DayCompletions: completionsCount
         });
       }
 
