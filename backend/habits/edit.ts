@@ -41,8 +41,8 @@ export const editHabit = api<EditHabitRequest, Habit>(
     const frequencyDay = req.frequencyDay !== undefined ? req.frequencyDay : existingHabit.frequency_day;
     const recursOnWeekday = req.recursOnWeekday !== undefined ? req.recursOnWeekday : existingHabit.recurs_on_weekday;
     const reminderEnabled = req.reminderEnabled !== undefined ? req.reminderEnabled : existingHabit.reminder_enabled;
-    const reminderTime = req.reminderTime !== undefined ? req.reminderTime : existingHabit.reminder_time;
-    const reminderDaysBefore = req.reminderDaysBefore !== undefined ? req.reminderDaysBefore : existingHabit.reminder_days_before;
+    const reminderTime = req.reminderTime !== undefined ? req.reminderTime : (req.reminderEnabled === false ? null : existingHabit.reminder_time);
+    const reminderDaysBefore = req.reminderDaysBefore !== undefined ? req.reminderDaysBefore : (req.reminderEnabled === false ? 0 : existingHabit.reminder_days_before);
 
     // If categoryId is being updated, verify the new category exists
     if (req.categoryId !== undefined) {
@@ -57,7 +57,7 @@ export const editHabit = api<EditHabitRequest, Habit>(
     // Update the habit
     await db.exec`
       UPDATE habits 
-      SET name = ${name}, description = ${description || null}, category_id = ${categoryId}, frequency_type = ${frequencyType}, due_date = ${dueDate}, frequency_day = ${frequencyDay}, recurs_on_weekday = ${recursOnWeekday}, reminder_enabled = ${reminderEnabled}, reminder_time = ${reminderEnabled && reminderTime ? reminderTime : null}, reminder_days_before = ${reminderDaysBefore}
+      SET name = ${name}, description = ${description || null}, category_id = ${categoryId}, frequency_type = ${frequencyType}, due_date = ${dueDate}, frequency_day = ${frequencyDay}, recurs_on_weekday = ${recursOnWeekday}, reminder_enabled = ${reminderEnabled}, reminder_time = ${reminderTime}, reminder_days_before = ${reminderDaysBefore}
       WHERE id = ${req.id} AND user_id = ${auth.userID}
     `;
 
