@@ -57,7 +57,7 @@ export const editHabit = api<EditHabitRequest, Habit>(
     // Update the habit
     await db.exec`
       UPDATE habits 
-      SET name = ${name}, description = ${description || null}, category_id = ${categoryId}, frequency_type = ${frequencyType}, due_date = ${dueDate}, frequency_day = ${frequencyDay}, recurs_on_weekday = ${recursOnWeekday}, reminder_enabled = ${reminderEnabled}, reminder_time = ${reminderTime}, reminder_days_before = ${reminderDaysBefore}
+      SET name = ${name}, description = ${description || null}, category_id = ${categoryId}, frequency_type = ${frequencyType}, due_date = ${dueDate}, frequency_day = ${frequencyDay}, recurs_on_weekday = ${recursOnWeekday}, reminder_enabled = ${reminderEnabled}, reminder_time = ${reminderEnabled && reminderTime ? reminderTime : null}, reminder_days_before = ${reminderDaysBefore}
       WHERE id = ${req.id} AND user_id = ${auth.userID}
     `;
 
