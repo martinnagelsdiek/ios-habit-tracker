@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -17,9 +17,64 @@ interface RadarChartProps {
   className?: string;
 }
 
-export function RadarChart({ categories, className }: RadarChartProps) {
+export const RadarChart = memo(function RadarChart({ categories, className }: RadarChartProps) {
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   
+  // Memoize chart calculations
+  const chartData = useMemo(() => {
+    if (categories.length < 3) {
+      return null;
+    }
+
+    const size = 280;
+    const center = size / 2;
+    const maxRadius = center - 40;
+    const angleStep = (2 * Math.PI) / categories.length;
+
+    const getPoint = (level: number, index: number) => {
+      const angle = index * angleStep - Math.PI / 2;
+      const radius = (level / 100) * maxRadius;
+      return {
+        x: center + radius * Math.cos(angle),
+        y: center + radius * Math.sin(angle)
+      };
+    };
+
+    const getGridPoint = (ring: number, index: number) => {
+      const angle = index * angleStep - Math.PI / 2;
+      const radius = (ring / 5) * maxRadius;
+      return {
+        x: center + radius * Math.cos(angle),
+        y: center + radius * Math.sin(angle)
+      };
+    };
+
+    const getLabelPoint = (index: number) => {
+      const angle = index * angleStep - Math.PI / 2;
+      const radius = maxRadius + 20;
+      return {
+        x: center + radius * Math.cos(angle),
+        y: center + radius * Math.sin(angle)
+      };
+    };
+
+    const dataPoints = categories.map((cat, index) => getPoint(cat.level, index));
+    const pathData = dataPoints.map((point, index) => 
+      `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`
+    ).join(' ') + ' Z';
+
+    return {
+      size,
+      center,
+      maxRadius,
+      angleStep,
+      getGridPoint,
+      getLabelPoint,
+      dataPoints,
+      pathData
+    };
+  }, [categories]);
+
   if (categories.length < 3) {
     return (
       <Card className={cn("h-full", className)}>
@@ -51,42 +106,9 @@ export function RadarChart({ categories, className }: RadarChartProps) {
     );
   }
 
-  const size = 280;
-  const center = size / 2;
-  const maxRadius = center - 40;
-  const angleStep = (2 * Math.PI) / categories.length;
+  if (!chartData) return null;
 
-  const getPoint = (level: number, index: number) => {
-    const angle = index * angleStep - Math.PI / 2; // Start from top
-    const radius = (level / 100) * maxRadius;
-    return {
-      x: center + radius * Math.cos(angle),
-      y: center + radius * Math.sin(angle)
-    };
-  };
-
-  const getGridPoint = (ring: number, index: number) => {
-    const angle = index * angleStep - Math.PI / 2;
-    const radius = (ring / 5) * maxRadius; // 5 rings: 20, 40, 60, 80, 100
-    return {
-      x: center + radius * Math.cos(angle),
-      y: center + radius * Math.sin(angle)
-    };
-  };
-
-  const getLabelPoint = (index: number) => {
-    const angle = index * angleStep - Math.PI / 2;
-    const radius = maxRadius + 20;
-    return {
-      x: center + radius * Math.cos(angle),
-      y: center + radius * Math.sin(angle)
-    };
-  };
-
-  const dataPoints = categories.map((cat, index) => getPoint(cat.level, index));
-  const pathData = dataPoints.map((point, index) => 
-    `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`
-  ).join(' ') + ' Z';
+  const { size, center, getGridPoint, getLabelPoint, dataPoints, pathData } = chartData;
 
   return (
     <Card className={cn("h-full", className)}>
@@ -190,7 +212,7 @@ export function RadarChart({ categories, className }: RadarChartProps) {
             {[20, 40, 60, 80, 100].map((level, index) => (
               <text
                 key={level}
-                x={center + ((index + 1) / 5) * maxRadius + 5}
+                x={center + ((index + 1) / 5) * chartData.maxRadius + 5}
                 y={center - 5}
                 className="text-xs fill-muted-foreground"
                 textAnchor="start"
@@ -229,4 +251,4 @@ export function RadarChart({ categories, className }: RadarChartProps) {
       </CardContent>
     </Card>
   );
-}
+});

@@ -23,6 +23,8 @@ export interface LevelingSummaryResponse {
   };
   categories: CategorySummary[];
   todayXPByHabit: Record<number, number>;
+  healthy: boolean;
+  error?: string;
 }
 
 export const getSummary = api<{}, LevelingSummaryResponse>(
@@ -32,83 +34,90 @@ export const getSummary = api<{}, LevelingSummaryResponse>(
     const userId = auth.userID;
 
     try {
-      // Try to get user overall progress (if table exists)
-      let userProgress;
+      // First check if leveling tables exist (integrated health check)
+      let tablesExist = true;
+      let healthError: string | undefined;
+      
       try {
-        userProgress = await db.queryRow<{
-          overall_level: number;
-          overall_current_xp: number;
-          overall_total_xp: number;
-        }>`
-          SELECT overall_level, overall_current_xp, overall_total_xp
-          FROM user_progress
-          WHERE user_id = ${userId}
-        `;
+        await db.queryRow`SELECT 1 FROM user_progress LIMIT 1`;
+        await db.queryRow`SELECT 1 FROM category_progress LIMIT 1`;
       } catch (err) {
-        // Table might not exist yet - create default progress
-        userProgress = null;
+        tablesExist = false;
+        healthError = err instanceof Error ? err.message : 'Unknown error';
       }
+
+      if (!tablesExist) {
+        return {
+          overall: { level: 1, currentXP: 0, neededXP: 100, totalXP: 0 },
+          categories: [],
+          todayXPByHabit: {},
+          healthy: false,
+          error: healthError
+        };
+      }
+
+      // Try to get user overall progress
+      let userProgress = await db.queryRow<{
+        overall_level: number;
+        overall_current_xp: number;
+        overall_total_xp: number;
+      }>`
+        SELECT overall_level, overall_current_xp, overall_total_xp
+        FROM user_progress
+        WHERE user_id = ${userId}
+      `;
 
       // Create default if doesn't exist
       if (!userProgress) {
         userProgress = { overall_level: 1, overall_current_xp: 0, overall_total_xp: 0 };
       }
 
-      // Get basic categories (these should already exist)
-      const basicCategories = await db.query<{
+      // Single optimized query to get all category data at once
+      const categoryData = await db.query<{
         id: number;
         name: string;
         color: string;
         icon: string;
+        level: number | null;
+        xp: number | null;
+        rank: string | null;
+        completions_count: number;
       }>`
-        SELECT id, name, color, icon
-        FROM categories
-        ORDER BY name
+        SELECT 
+          c.id,
+          c.name,
+          c.color,
+          c.icon,
+          cp.level,
+          cp.xp,
+          cp.rank,
+          COALESCE(cc.completions_count, 0) as completions_count
+        FROM categories c
+        LEFT JOIN category_progress cp ON c.id = cp.category_id AND cp.user_id = ${userId}
+        LEFT JOIN (
+          SELECT 
+            h.category_id,
+            COUNT(*) as completions_count
+          FROM habit_completions hc
+          JOIN habits h ON hc.habit_id = h.id
+          WHERE h.user_id = ${userId} 
+            AND hc.completion_date >= DATE('now', '-7 days')
+          GROUP BY h.category_id
+        ) cc ON c.id = cc.category_id
+        ORDER BY c.name
       `;
 
       const categories: CategorySummary[] = [];
-      for await (const cat of basicCategories) {
-        // Try to get actual category progress
-        let categoryProgress;
-        try {
-          categoryProgress = await db.queryRow<{
-            level: number;
-            xp: number;
-            rank: string;
-          }>`
-            SELECT level, xp, rank
-            FROM category_progress
-            WHERE user_id = ${userId} AND category_id = ${cat.id}
-          `;
-        } catch (err) {
-          categoryProgress = null;
-        }
-
-        // Get last 7 days completions count
-        let completionsCount = 0;
-        try {
-          const result = await db.queryRow<{ count: number }>`
-            SELECT COUNT(*) as count
-            FROM habit_completions hc
-            JOIN habits h ON hc.habit_id = h.id
-            WHERE h.user_id = ${userId} 
-              AND h.category_id = ${cat.id}
-              AND hc.completion_date >= DATE('now', '-7 days')
-          `;
-          completionsCount = result?.count || 0;
-        } catch (err) {
-          // Ignore error, keep default 0
-        }
-
+      for await (const cat of categoryData) {
         categories.push({
           categoryId: cat.id,
           categoryName: cat.name,
           categoryColor: cat.color,
           categoryIcon: cat.icon,
-          level: categoryProgress?.level || 1,
-          xp: categoryProgress?.xp || 0,
-          rank: categoryProgress?.rank || 'Novice',
-          last7DayCompletions: completionsCount
+          level: cat.level || 1,
+          xp: cat.xp || 0,
+          rank: cat.rank || 'Novice',
+          last7DayCompletions: cat.completions_count
         });
       }
 
@@ -120,11 +129,18 @@ export const getSummary = api<{}, LevelingSummaryResponse>(
           totalXP: userProgress.overall_total_xp
         },
         categories,
-        todayXPByHabit: {}
+        todayXPByHabit: {},
+        healthy: true
       };
     } catch (error) {
       console.error("Error in getSummary:", error);
-      throw APIError.internal("Failed to fetch leveling summary", error as Error);
+      return {
+        overall: { level: 1, currentXP: 0, neededXP: 100, totalXP: 0 },
+        categories: [],
+        todayXPByHabit: {},
+        healthy: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
     }
   }
 );

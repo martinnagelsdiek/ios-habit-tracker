@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -17,7 +18,8 @@ interface CategoryCardProps {
   className?: string;
 }
 
-export function CategoryCard({
+// Memoized component for better performance
+export const CategoryCard = memo(function CategoryCard({
   categoryName,
   categoryColor,
   categoryIcon,
@@ -27,13 +29,23 @@ export function CategoryCard({
   last7DayCompletions,
   className
 }: CategoryCardProps) {
-  const xpToNext = level < 100 ? Math.round(100 * Math.pow(level + 1, 1.6)) : 0;
-  const currentLevelXP = level > 1 ? Math.round(100 * Math.pow(level, 1.6)) : 0;
-  const progressXP = xp - currentLevelXP;
-  const neededXP = xpToNext - currentLevelXP;
-  const progressPercent = neededXP > 0 ? (progressXP / neededXP) * 100 : 100;
+  // Memoize expensive calculations
+  const progressData = useMemo(() => {
+    const xpToNext = level < 100 ? Math.round(100 * Math.pow(level + 1, 1.6)) : 0;
+    const currentLevelXP = level > 1 ? Math.round(100 * Math.pow(level, 1.6)) : 0;
+    const progressXP = xp - currentLevelXP;
+    const neededXP = xpToNext - currentLevelXP;
+    const progressPercent = neededXP > 0 ? (progressXP / neededXP) * 100 : 100;
 
-  const getRankColor = (rank: string) => {
+    return {
+      progressXP,
+      neededXP,
+      progressPercent: Math.max(0, Math.min(100, progressPercent))
+    };
+  }, [level, xp]);
+
+  // Memoize rank color calculation
+  const rankColorClass = useMemo(() => {
     switch (rank) {
       case "Legendary": return "text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/20";
       case "Grandmaster": return "text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/20";
@@ -43,9 +55,12 @@ export function CategoryCard({
       case "Apprentice": return "text-orange-600 bg-orange-100 dark:text-orange-400 dark:bg-orange-900/20";
       default: return "text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-900/20";
     }
-  };
+  }, [rank]);
 
-  const IconComponent = (LucideIcons as any)[categoryIcon] as LucideIcon || LucideIcons.Target;
+  // Memoize icon component
+  const IconComponent = useMemo(() => {
+    return (LucideIcons as any)[categoryIcon] as LucideIcon || LucideIcons.Target;
+  }, [categoryIcon]);
 
   return (
     <Card className={cn("relative overflow-hidden hover:shadow-md transition-all", className)}>
@@ -67,7 +82,7 @@ export function CategoryCard({
           </CardTitle>
           <div className="text-right">
             <div className="text-2xl font-bold">L{level}</div>
-            <Badge className={cn("text-xs", getRankColor(rank))}>
+            <Badge className={cn("text-xs", rankColorClass)}>
               {rank}
             </Badge>
           </div>
@@ -80,11 +95,11 @@ export function CategoryCard({
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">To Level {level + 1}</span>
               <span className="font-medium">
-                {progressXP.toLocaleString()} / {neededXP.toLocaleString()} XP
+                {progressData.progressXP.toLocaleString()} / {progressData.neededXP.toLocaleString()} XP
               </span>
             </div>
             <Progress 
-              value={progressPercent} 
+              value={progressData.progressPercent} 
               className="h-2"
             />
           </div>
@@ -106,4 +121,4 @@ export function CategoryCard({
       </CardContent>
     </Card>
   );
-}
+});
