@@ -101,7 +101,7 @@ export const getSummary = api<{}, LevelingSummaryResponse>(
           FROM habit_completions hc
           JOIN habits h ON hc.habit_id = h.id
           WHERE h.user_id = ${userId} 
-            AND hc.completion_date >= DATE('now', '-7 days')
+            AND hc.completion_date >= (CURRENT_DATE - INTERVAL '7 days')
           GROUP BY h.category_id
         ) cc ON c.id = cc.category_id
         ORDER BY c.name
