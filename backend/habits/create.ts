@@ -12,6 +12,9 @@ export interface CreateHabitRequest {
   dueDate: string; // YYYY-MM-DD format
   frequencyDay?: number; // day of week (0-6 for weekly), day of month (1-31 for monthly), etc.
   recursOnWeekday?: boolean; // for weekly/other frequencies: true = same weekday pattern, false = exact date
+  reminderEnabled?: boolean;
+  reminderTime?: string; // HH:MM format
+  reminderDaysBefore?: number; // 0 = same day, 1 = 1 day before, etc.
 }
 
 export interface Habit {
@@ -29,6 +32,9 @@ export interface Habit {
   categoryName: string;
   categoryColor: string;
   categoryIcon: string;
+  reminderEnabled: boolean;
+  reminderTime: string | null;
+  reminderDaysBefore: number;
 }
 
 // Creates a new habit for the authenticated user.
@@ -57,9 +63,12 @@ export const createHabit = api<CreateHabitRequest, Habit>(
       recurs_on_weekday: boolean;
       created_at: Date;
       is_active: boolean;
+      reminder_enabled: boolean;
+      reminder_time: string | null;
+      reminder_days_before: number;
     }>`
-      INSERT INTO habits (user_id, category_id, name, description, frequency_type, due_date, frequency_day, recurs_on_weekday)
-      VALUES (${auth.userID}, ${req.categoryId}, ${req.name}, ${req.description || null}, ${req.frequencyType}, ${req.dueDate}, ${req.frequencyDay || null}, ${req.recursOnWeekday || false})
+      INSERT INTO habits (user_id, category_id, name, description, frequency_type, due_date, frequency_day, recurs_on_weekday, reminder_enabled, reminder_time, reminder_days_before)
+      VALUES (${auth.userID}, ${req.categoryId}, ${req.name}, ${req.description || null}, ${req.frequencyType}, ${req.dueDate}, ${req.frequencyDay || null}, ${req.recursOnWeekday || false}, ${req.reminderEnabled || false}, ${req.reminderTime || null}, ${req.reminderDaysBefore || 0})
       RETURNING *
     `;
 
@@ -82,6 +91,9 @@ export const createHabit = api<CreateHabitRequest, Habit>(
       categoryName: category.name,
       categoryColor: category.color,
       categoryIcon: category.icon,
+      reminderEnabled: habit.reminder_enabled,
+      reminderTime: habit.reminder_time,
+      reminderDaysBefore: habit.reminder_days_before,
     };
   }
 );

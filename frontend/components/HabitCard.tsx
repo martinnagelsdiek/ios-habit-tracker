@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Flame } from "lucide-react";
+import { Check, Flame, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TodayHabit } from "~backend/habits/today";
 
@@ -28,6 +28,11 @@ export function HabitCard({ habit, onToggleCompletion, isLoading }: HabitCardPro
               <span className="text-xs text-muted-foreground font-medium">
                 {habit.categoryName}
               </span>
+              {habit.reminderEnabled && (
+                <div title={`Reminder at ${habit.reminderTime}`}>
+                  <Bell className="w-3 h-3 text-blue-500" />
+                </div>
+              )}
               <Badge variant="outline" className="text-xs ml-auto">
                 {habit.frequencyType} • Due: {habit.dueDate.toLocaleDateString()}
               </Badge>

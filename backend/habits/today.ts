@@ -16,6 +16,9 @@ export interface TodayHabit {
   recursOnWeekday: boolean;
   isCompleted: boolean;
   currentStreak: number;
+  reminderEnabled: boolean;
+  reminderTime: string | null;
+  reminderDaysBefore: number;
 }
 
 interface TodayResponse {
@@ -44,6 +47,9 @@ export const getTodayHabits = api<void, TodayResponse>(
       category_color: string;
       category_icon: string;
       created_at: Date;
+      reminder_enabled: boolean;
+      reminder_time: string | null;
+      reminder_days_before: number;
     }>`
       SELECT 
         h.id,
@@ -56,7 +62,10 @@ export const getTodayHabits = api<void, TodayResponse>(
         c.name as category_name,
         c.color as category_color,
         c.icon as category_icon,
-        h.created_at
+        h.created_at,
+        h.reminder_enabled,
+        h.reminder_time,
+        h.reminder_days_before
       FROM habits h
       JOIN categories c ON h.category_id = c.id
       WHERE h.user_id = ${auth.userID} AND h.is_active = TRUE
@@ -98,6 +107,9 @@ export const getTodayHabits = api<void, TodayResponse>(
           recursOnWeekday: habit.recurs_on_weekday,
           isCompleted: !!completion,
           currentStreak,
+          reminderEnabled: habit.reminder_enabled,
+          reminderTime: habit.reminder_time,
+          reminderDaysBefore: habit.reminder_days_before,
         });
       }
     }

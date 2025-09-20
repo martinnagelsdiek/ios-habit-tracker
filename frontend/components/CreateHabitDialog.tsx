@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Bell } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import type { FrequencyType } from "~backend/habits/create";
 import type { HabitTemplate } from "~backend/habits/templates";
@@ -29,6 +30,9 @@ export function CreateHabitDialog({ open, onOpenChange, selectedTemplate }: Crea
   const [frequencyDay, setFrequencyDay] = useState<string>("");
   const [recursOnWeekday, setRecursOnWeekday] = useState<boolean>(true);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [reminderEnabled, setReminderEnabled] = useState<boolean>(false);
+  const [reminderTime, setReminderTime] = useState<string>("09:00");
+  const [reminderDaysBefore, setReminderDaysBefore] = useState<number>(0);
 
   const backend = useBackend();
   const queryClient = useQueryClient();
@@ -40,7 +44,7 @@ export function CreateHabitDialog({ open, onOpenChange, selectedTemplate }: Crea
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: { name: string; description?: string; categoryId: number; frequencyType: FrequencyType; dueDate: string; frequencyDay?: number; recursOnWeekday?: boolean }) =>
+    mutationFn: (data: { name: string; description?: string; categoryId: number; frequencyType: FrequencyType; dueDate: string; frequencyDay?: number; recursOnWeekday?: boolean; reminderEnabled?: boolean; reminderTime?: string; reminderDaysBefore?: number }) =>
       backend.habits.createHabit(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["habits"] });
@@ -70,6 +74,9 @@ export function CreateHabitDialog({ open, onOpenChange, selectedTemplate }: Crea
     setDueDate(new Date().toISOString().split('T')[0]);
     setFrequencyDay("");
     setRecursOnWeekday(true);
+    setReminderEnabled(false);
+    setReminderTime("09:00");
+    setReminderDaysBefore(0);
   };
 
   // Fill form with template data when selectedTemplate changes
@@ -106,6 +113,9 @@ export function CreateHabitDialog({ open, onOpenChange, selectedTemplate }: Crea
       dueDate,
       frequencyDay: frequencyDay ? parseInt(frequencyDay) : undefined,
       recursOnWeekday: frequencyType !== "daily" ? recursOnWeekday : undefined,
+      reminderEnabled,
+      reminderTime: reminderEnabled ? reminderTime : undefined,
+      reminderDaysBefore: reminderEnabled ? reminderDaysBefore : undefined,
     });
   };
 
@@ -247,6 +257,50 @@ export function CreateHabitDialog({ open, onOpenChange, selectedTemplate }: Crea
               placeholder="Describe your habit..."
               rows={3}
             />
+          </div>
+
+          <div className="space-y-4 border-t pt-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bell className="w-4 h-4" />
+                <Label htmlFor="reminderEnabled" className="cursor-pointer">Enable Reminders</Label>
+              </div>
+              <Switch
+                id="reminderEnabled"
+                checked={reminderEnabled}
+                onCheckedChange={setReminderEnabled}
+              />
+            </div>
+
+            {reminderEnabled && (
+              <div className="space-y-3 pl-6">
+                <div className="space-y-2">
+                  <Label htmlFor="reminderTime">Reminder Time</Label>
+                  <Input
+                    id="reminderTime"
+                    type="time"
+                    value={reminderTime}
+                    onChange={(e) => setReminderTime(e.target.value)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="reminderDaysBefore">Remind Me</Label>
+                  <Select value={reminderDaysBefore.toString()} onValueChange={(value) => setReminderDaysBefore(parseInt(value))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">On the day</SelectItem>
+                      <SelectItem value="1">1 day before</SelectItem>
+                      <SelectItem value="2">2 days before</SelectItem>
+                      <SelectItem value="3">3 days before</SelectItem>
+                      <SelectItem value="7">1 week before</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2 pt-4">

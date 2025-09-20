@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 import { useBackend } from "../hooks/useBackend";
+import { Bell } from "lucide-react";
 import type { Habit, FrequencyType } from "~backend/habits/create";
 import type { Category } from "~backend/habits/categories";
 
@@ -28,6 +30,9 @@ export function EditHabitDialog({ habit, open, onOpenChange, onHabitUpdated }: E
   const [frequencyDay, setFrequencyDay] = useState<string>("");
   const [recursOnWeekday, setRecursOnWeekday] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [reminderEnabled, setReminderEnabled] = useState<boolean>(false);
+  const [reminderTime, setReminderTime] = useState<string>("09:00");
+  const [reminderDaysBefore, setReminderDaysBefore] = useState<number>(0);
   
   const { data: categoriesData } = useQuery({
     queryKey: ["categories"],
@@ -45,6 +50,9 @@ export function EditHabitDialog({ habit, open, onOpenChange, onHabitUpdated }: E
       setDueDate(habit.dueDate.toISOString().split('T')[0]);
       setFrequencyDay(habit.frequencyDay?.toString() || "");
       setRecursOnWeekday(habit.recursOnWeekday);
+      setReminderEnabled(habit.reminderEnabled);
+      setReminderTime(habit.reminderTime || "09:00");
+      setReminderDaysBefore(habit.reminderDaysBefore);
     }
   }, [habit, open]);
 
@@ -63,6 +71,9 @@ export function EditHabitDialog({ habit, open, onOpenChange, onHabitUpdated }: E
         dueDate,
         frequencyDay: frequencyDay ? parseInt(frequencyDay) : undefined,
         recursOnWeekday: frequencyType !== "daily" ? recursOnWeekday : undefined,
+        reminderEnabled,
+        reminderTime: reminderEnabled ? reminderTime : undefined,
+        reminderDaysBefore: reminderEnabled ? reminderDaysBefore : undefined,
       });
 
       toast({
@@ -90,6 +101,9 @@ export function EditHabitDialog({ habit, open, onOpenChange, onHabitUpdated }: E
     setCategoryId("");
     setFrequencyType("daily");
     setFrequencyDay("");
+    setReminderEnabled(false);
+    setReminderTime("09:00");
+    setReminderDaysBefore(0);
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -200,6 +214,50 @@ export function EditHabitDialog({ habit, open, onOpenChange, onHabitUpdated }: E
               </p>
             </div>
           )}
+
+          <div className="space-y-4 border-t pt-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bell className="w-4 h-4" />
+                <Label htmlFor="reminderEnabled" className="cursor-pointer">Enable Reminders</Label>
+              </div>
+              <Switch
+                id="reminderEnabled"
+                checked={reminderEnabled}
+                onCheckedChange={setReminderEnabled}
+              />
+            </div>
+
+            {reminderEnabled && (
+              <div className="space-y-3 pl-6">
+                <div className="space-y-2">
+                  <Label htmlFor="reminderTime">Reminder Time</Label>
+                  <Input
+                    id="reminderTime"
+                    type="time"
+                    value={reminderTime}
+                    onChange={(e) => setReminderTime(e.target.value)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="reminderDaysBefore">Remind Me</Label>
+                  <Select value={reminderDaysBefore.toString()} onValueChange={(value) => setReminderDaysBefore(parseInt(value))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">On the day</SelectItem>
+                      <SelectItem value="1">1 day before</SelectItem>
+                      <SelectItem value="2">2 days before</SelectItem>
+                      <SelectItem value="3">3 days before</SelectItem>
+                      <SelectItem value="7">1 week before</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+          </div>
           
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} className="flex-1">

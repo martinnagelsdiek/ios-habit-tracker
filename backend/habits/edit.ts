@@ -12,6 +12,9 @@ export interface EditHabitRequest {
   dueDate?: string; // YYYY-MM-DD format
   frequencyDay?: number;
   recursOnWeekday?: boolean;
+  reminderEnabled?: boolean;
+  reminderTime?: string; // HH:MM format
+  reminderDaysBefore?: number;
 }
 
 // Updates an existing habit for the authenticated user.
@@ -22,7 +25,7 @@ export const editHabit = api<EditHabitRequest, Habit>(
     
     // Check if habit exists and belongs to user
     const existingHabit = await db.queryRow`
-      SELECT id, name, description, category_id, frequency_type, due_date, frequency_day, recurs_on_weekday FROM habits 
+      SELECT id, name, description, category_id, frequency_type, due_date, frequency_day, recurs_on_weekday, reminder_enabled, reminder_time, reminder_days_before FROM habits 
       WHERE id = ${req.id} AND user_id = ${auth.userID} AND is_active = true
     `;
     if (!existingHabit) {
@@ -37,6 +40,9 @@ export const editHabit = api<EditHabitRequest, Habit>(
     const dueDate = req.dueDate !== undefined ? req.dueDate : existingHabit.due_date;
     const frequencyDay = req.frequencyDay !== undefined ? req.frequencyDay : existingHabit.frequency_day;
     const recursOnWeekday = req.recursOnWeekday !== undefined ? req.recursOnWeekday : existingHabit.recurs_on_weekday;
+    const reminderEnabled = req.reminderEnabled !== undefined ? req.reminderEnabled : existingHabit.reminder_enabled;
+    const reminderTime = req.reminderTime !== undefined ? req.reminderTime : existingHabit.reminder_time;
+    const reminderDaysBefore = req.reminderDaysBefore !== undefined ? req.reminderDaysBefore : existingHabit.reminder_days_before;
 
     // If categoryId is being updated, verify the new category exists
     if (req.categoryId !== undefined) {
@@ -51,7 +57,7 @@ export const editHabit = api<EditHabitRequest, Habit>(
     // Update the habit
     await db.exec`
       UPDATE habits 
-      SET name = ${name}, description = ${description || null}, category_id = ${categoryId}, frequency_type = ${frequencyType}, due_date = ${dueDate}, frequency_day = ${frequencyDay}, recurs_on_weekday = ${recursOnWeekday}
+      SET name = ${name}, description = ${description || null}, category_id = ${categoryId}, frequency_type = ${frequencyType}, due_date = ${dueDate}, frequency_day = ${frequencyDay}, recurs_on_weekday = ${recursOnWeekday}, reminder_enabled = ${reminderEnabled}, reminder_time = ${reminderTime}, reminder_days_before = ${reminderDaysBefore}
       WHERE id = ${req.id} AND user_id = ${auth.userID}
     `;
 
@@ -68,6 +74,9 @@ export const editHabit = api<EditHabitRequest, Habit>(
       recurs_on_weekday: boolean;
       created_at: Date;
       is_active: boolean;
+      reminder_enabled: boolean;
+      reminder_time: string | null;
+      reminder_days_before: number;
       category_name: string;
       category_color: string;
       category_icon: string;
@@ -97,6 +106,9 @@ export const editHabit = api<EditHabitRequest, Habit>(
       categoryName: updatedHabit.category_name,
       categoryColor: updatedHabit.category_color,
       categoryIcon: updatedHabit.category_icon,
+      reminderEnabled: updatedHabit.reminder_enabled,
+      reminderTime: updatedHabit.reminder_time,
+      reminderDaysBefore: updatedHabit.reminder_days_before,
     };
   }
 );

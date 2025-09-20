@@ -25,6 +25,9 @@ export const listHabits = api<void, ListHabitsResponse>(
       recurs_on_weekday: boolean;
       created_at: Date;
       is_active: boolean;
+      reminder_enabled: boolean;
+      reminder_time: string | null;
+      reminder_days_before: number;
       category_name: string;
       category_color: string;
       category_icon: string;
@@ -52,6 +55,9 @@ export const listHabits = api<void, ListHabitsResponse>(
         categoryName: h.category_name,
         categoryColor: h.category_color,
         categoryIcon: h.category_icon,
+        reminderEnabled: h.reminder_enabled,
+        reminderTime: h.reminder_time,
+        reminderDaysBefore: h.reminder_days_before,
       }))
     };
   }
