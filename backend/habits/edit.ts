@@ -21,13 +21,16 @@ export interface EditHabitRequest {
 export const editHabit = api<EditHabitRequest, Habit>(
   { auth: true, expose: true, method: "PUT", path: "/habits/:id" },
   async (req) => {
-    const auth = getAuthData()!;
+    try {
+      const auth = getAuthData()!;
+      console.log("Edit habit request:", JSON.stringify(req, null, 2));
     
     // Check if habit exists and belongs to user
     const existingHabit = await db.queryRow`
       SELECT id, name, description, category_id, frequency_type, due_date, frequency_day, recurs_on_weekday, reminder_enabled, reminder_time, reminder_days_before FROM habits 
       WHERE id = ${req.id} AND user_id = ${auth.userID} AND is_active = true
     `;
+    console.log("Existing habit:", existingHabit);
     if (!existingHabit) {
       throw APIError.notFound("habit not found");
     }
@@ -110,5 +113,10 @@ export const editHabit = api<EditHabitRequest, Habit>(
       reminderTime: updatedHabit.reminder_time,
       reminderDaysBefore: updatedHabit.reminder_days_before,
     };
+    } catch (error) {
+      console.error("Edit habit error:", error);
+      console.error("Request data:", JSON.stringify(req, null, 2));
+      throw error;
+    }
   }
 );
